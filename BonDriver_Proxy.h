@@ -1,9 +1,18 @@
 #ifndef __BONDRIVER_PROXY_H__
 #define __BONDRIVER_PROXY_H__
+
+#include "config.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(HAVE_SYS_TYPES_H)
+#include <sys/types.h>
+#endif
+#if defined(HAVE_NETINET_IN_H)
+#include <netinet/in.h>
+#endif
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>

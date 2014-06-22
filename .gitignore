@@ -22,3 +22,14 @@ util/splitter
 
 # Executables
 *.out
+*.app
+
+BonDriverProxy
+BonDriver_LinuxPT.so
+BonDriver_Proxy.so
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+config.h
+sample

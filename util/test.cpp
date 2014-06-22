@@ -1,7 +1,9 @@
 /*
 $ g++ -O2 -Wall -rdynamic -pthread -o test test.cpp -ldl
 */
-#define _FILE_OFFSET_BITS	64
+#include "config.h"
+
+#define FILE_OFFSET_BITS	64
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +48,7 @@ static int RevConvert(char *src, char *dst, size_t dstsize)
 	}
 	size_t srclen = n + 2;	// 終端NULL込み
 	size_t dstlen = dstsize - 1;
-	size_t ret = iconv(d, &src, &srclen, &dst, &dstlen);
+	size_t ret = iconv(d, (ICONV_CONST char **)&src, &srclen, &dst, &dstlen);
 	*dst = '\0';
 	iconv_close(d);
 	if (ret == (size_t)-1)

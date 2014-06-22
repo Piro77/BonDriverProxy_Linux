@@ -14,6 +14,22 @@ static DWORD g_Crc32Table[256];
 static BOOL g_ModPMT;
 static DWORD g_dwDelFlag;
 
+#if defined(__FreeBSD__)
+static int g_ptxnum;
+static int g_tnuernum;
+static const char *GetMibName(const char *suffix)
+{
+	static char mib[32];
+	if (::strcmp(suffix,"lnb")==0) {
+		::snprintf(mib,32, "dev.ptx.%d.%s",g_ptxnum,suffix);
+	}
+	else {
+		::snprintf(mib,32, "dev.ptx.%d.%s%d.%s",g_ptxnum,g_Type?"t":"s",g_tnuernum,suffix);
+	}
+	return mib;
+}
+#endif
+
 static int Convert(char *src, char *dst, size_t dstsize)
 {
 	iconv_t d = ::iconv_open("UTF-16LE", "UTF-8");
@@ -21,7 +37,7 @@ static int Convert(char *src, char *dst, size_t dstsize)
 		return -1;
 	size_t srclen = ::strlen(src) + 1;
 	size_t dstlen = dstsize - 2;
-	size_t ret = ::iconv(d, &src, &srclen, &dst, &dstlen);
+	size_t ret = ::iconv(d,(ICONV_CONST char **) &src, &srclen, &dst, &dstlen);
 	*dst = *(dst + 1) = '\0';
 	::iconv_close(d);
 	if (ret == (size_t)-1)
@@ -114,6 +130,15 @@ static int Init()
 			::strncpy(g_Device, p, sizeof(g_Device) - 1);
 			g_Device[sizeof(g_Device) - 1] = '\0';
 			g_MustStop = FALSE;
+#if defined(__FreeBSD__)
+			p = ::strstr(g_Device, ".");
+			if (p[1]=='t')
+				g_Type = 1;
+			else
+				g_Type = 0;
+			g_ptxnum = ::atoi(p-1);
+			g_tnuernum = ::atoi(p+2);
+#else
 			if ((p = ::strstr(g_Device, "video")) != NULL)	// PT
 				g_Type = (::atoi(p + 5) / 2) % 2;
 			else
@@ -134,6 +159,7 @@ static int Init()
 				}
 				cBonDriverLinuxPT::m_sbPT = FALSE;
 			}
+#endif
 			if (g_Type == 0)
 				p = (char *)"BS/CS110";
 			else
@@ -360,8 +386,15 @@ const BOOL cBonDriverLinuxPT::OpenTuner(void)
 		return FALSE;
 	if (m_sbPT == FALSE)
 		PLEX::InitPlexTuner(m_fd);
+#if defined(__FreeBSD__)
+	int lnb;
+	lnb = 2; //XXX 2固定?
+	if (g_UseLNB && (g_Type == 0) && (::sysctlbyname(GetMibName("lnb"), NULL, NULL, &lnb, sizeof(int))) < 0)
+		::fprintf(stderr, "LNB ON failed: %s\n", GetMibName("lnb"));
+#else
 	if (g_UseLNB && (g_Type == 0) && (::ioctl(m_fd, LNB_ENABLE, 2) < 0))
 		::fprintf(stderr, "LNB ON failed: %s\n", g_Device);
+#endif
 	m_bTuner = TRUE;
 	return TRUE;
 }
@@ -375,10 +408,18 @@ void cBonDriverLinuxPT::CloseTuner(void)
 			m_bStopTsRead = TRUE;
 			::pthread_join(m_hTsRead, NULL);
 			m_hTsRead = 0;
+#if defined(__FreeBSD__)
+		}
+		int lnb;
+		lnb = 0;
+		if (g_UseLNB && (g_Type == 0) && (::sysctlbyname(GetMibName("lnb"), NULL, NULL, &lnb, sizeof(int))) < 0)
+			::fprintf(stderr, "LNB OFF failed: %s\n", GetMibName("lnb"));
+#else
 			::ioctl(m_fd, STOP_REC, 0);
 		}
 		if (g_UseLNB && (g_Type == 0) && (::ioctl(m_fd, LNB_DISABLE, 0) < 0))
 			::fprintf(stderr, "LNB OFF failed: %s\n", g_Device);
+#endif
 		::close(m_fd);
 		m_bTuner = FALSE;
 		m_fd = -1;
@@ -532,6 +573,13 @@ const BOOL cBonDriverLinuxPT::SetChannel(const DWORD dwSpace, const DWORD dwChan
 
 	if (bFlag)
 	{
+#if defined(__FreeBSD__)
+		if (::sysctlbyname(GetMibName("freq"), NULL, NULL, &(g_stChannels[g_Type][dwChannel].freq), sizeof(g_stChannels[g_Type][dwChannel].freq)) < 0)
+		{
+			::fprintf(stderr, "SetChannel() sysctl error: %s\n", GetMibName("freq"));
+			return FALSE;
+		}
+#else
 		if (g_MustStop && m_hTsRead)
 		{
 			m_bStopTsRead = TRUE;
@@ -544,6 +592,7 @@ const BOOL cBonDriverLinuxPT::SetChannel(const DWORD dwSpace, const DWORD dwChan
 			::fprintf(stderr, "SetChannel() ioctl(SET_CHANNEL) error: %s\n", g_Device);
 			goto err;
 		}
+#endif
 	}
 
 	{
@@ -605,12 +654,14 @@ void *cBonDriverLinuxPT::TsReader(LPVOID pv)
 	ts.tv_sec = 0;
 	ts.tv_nsec = WAIT_TIME * 1000 * 1000;
 
+#if !defined(__FreeBSD__)
 	if (::ioctl(pLinuxPT->m_fd, START_REC, 0) < 0)
 	{
 		::fprintf(stderr, "TsReader() ioctl(START_REC) error: %s\n", g_Device);
 		ret = 302;
 		goto end;
 	}
+#endif
 
 	// TS読み込みループ
 	pTsBuf = new BYTE[TS_BUFSIZE];
@@ -625,8 +676,14 @@ void *cBonDriverLinuxPT::TsReader(LPVOID pv)
 		{
 			float f = 0;
 			int signal;
+#if defined(__FreeBSD__)
+			size_t len = sizeof(signal);
+			if(::sysctlbyname(GetMibName("signal"),&signal,&len,NULL,0)<0)
+				::fprintf(stderr, "TsReader() GET_SIGNAL_STRENGTH error: %s\n", GetMibName("signal"));
+#else
 			if (::ioctl(pLinuxPT->m_fd, GET_SIGNAL_STRENGTH, &signal) < 0)
 				::fprintf(stderr, "TsReader() ioctl(GET_SIGNAL_STRENGTH) error: %s\n", g_Device);
+#endif
 			else
 			{
 				if (g_Type == 0)

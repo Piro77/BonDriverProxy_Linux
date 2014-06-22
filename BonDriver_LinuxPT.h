@@ -1,5 +1,6 @@
 #ifndef _BONDRIVER_LINUXPT_H_
 #define _BONDRIVER_LINUXPT_H_
+#include "config.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,9 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
+#if defined(__FreeBSD__)
+#include <sys/sysctl.h>
+#endif
 #include <fcntl.h>
 #include <dlfcn.h>
 #include <pthread.h>

@@ -1,0 +1,58 @@
+cmake_minimum_required(VERSION 2.8)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/")
+
+include(CheckIncludeFiles)
+include(CheckStructHasMember)
+include(CheckSymbolExists)
+
+PROJECT(BonDriverProxy)
+
+find_package (Threads)
+
+find_package (Iconv REQUIRED)
+IF( ICONV_FOUND )
+  INCLUDE_DIRECTORIES( ${ICONV_INCLUDE_DIR} )
+  SET( HAVE_ICONV_H 1 )
+  SET( ICONV_REQUIRES_CONST ${ICONV_SECOND_ARGUMENT_IS_CONST} )
+ENDIF( ICONV_FOUND )
+
+find_package (PCSC)
+find_package (Arib25)
+IF( PCSC_FOUND AND ARIB25_FOUND )
+  SET( HAVE_ARIB25_H 1 )
+  INCLUDE_DIRECTORIES(${ARIB25_INCLUDE_DIR} ${PCSC_INCLUDE_DIR})
+  SET(DECODER_SOURCES "decoder.cpp")
+ELSE(PCSC_FOUND AND ARIB25_FOUND)
+  SET(ARIB25_LIBRARIES "")
+  SET(PCSC_LIBRARIES "")
+  SET(DECODER_SOURCES "")
+ENDIF(PCSC_FOUND AND ARIB25_FOUND)
+
+check_include_files("netinet/in.h" HAVE_NETINET_IN_H)
+check_include_files("sys/types.h" HAVE_SYS_TYPES_H)
+
+include_directories (${CMAKE_SOURCE_DIR}/)
+
+CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/config.h.in ${CMAKE_SOURCE_DIR}/config.h )
+
+ADD_EXECUTABLE(BonDriverProxy BonDriverProxy.cpp ${DECODER_SOURCES})
+ADD_EXECUTABLE(sample sample.cpp)
+ADD_EXECUTABLE(test EXCLUDE_FROM_ALL util/test.cpp)
+ADD_EXECUTABLE(udpsend EXCLUDE_FROM_ALL util/udpsend.c)
+ADD_LIBRARY(BonDriver_LinuxPT SHARED BonDriver_LinuxPT.cpp)
+ADD_LIBRARY(BonDriver_Proxy SHARED BonDriver_Proxy.cpp)
+
+SET_TARGET_PROPERTIES(BonDriver_LinuxPT PROPERTIES PREFIX "")
+SET_TARGET_PROPERTIES(BonDriver_Proxy PROPERTIES PREFIX "")
+
+SET_TARGET_PROPERTIES(sample PROPERTIES LINK_FLAGS -rdynamic)
+SET_TARGET_PROPERTIES(test PROPERTIES LINK_FLAGS -rdynamic)
+SET_TARGET_PROPERTIES(BonDriverProxy PROPERTIES LINK_FLAGS -rdynamic)
+
+
+target_link_libraries (BonDriverProxy ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ARIB25_LIBRARIES} ${PCSC_LIBRARIES})
+target_link_libraries (BonDriver_Proxy ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+target_link_libraries (sample ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+target_link_libraries (BonDriver_LinuxPT ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ICONV_LIBRARIES})
+target_link_libraries (test ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ICONV_LIBRARIES})

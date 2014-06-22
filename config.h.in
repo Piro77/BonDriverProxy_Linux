@@ -1,0 +1,18 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#cmakedefine ICONV_REQUIRES_CONST 1
+#cmakedefine HAVE_NETINET_IN_H 1
+#cmakedefine HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_ARIB25_H 1
+
+#ifdef ICONV_REQUIRES_CONST
+#define ICONV_CONST const
+#else
+#define ICONV_CONST
+#endif
+#endif
+
+#ifdef HAVE_ARIB25_H
+#define HAVE_LIBARIB25 1
+#endif

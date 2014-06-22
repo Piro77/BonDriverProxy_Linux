@@ -2,6 +2,8 @@
  * read stdin to udp/address:port
  * $ cc -O2 -Wall -o udpsend udpsend.c
  */
+#include "config.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,6 +11,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+
 
 int main(int ac, char *av[])
 {
