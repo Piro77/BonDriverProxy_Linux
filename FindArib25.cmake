@@ -12,7 +12,7 @@ IF (ARIB25_INCLUDE_DIR AND ARIB25_LIBRARIES)
   SET(ARIB25_FIND_QUIETLY TRUE)
 ENDIF (ARIB25_INCLUDE_DIR AND ARIB25_LIBRARIES)
 
-FIND_PATH(ARIB25_INCLUDE_DIR arib_std_b25.h PATHS /usr/local/include /usr/include arib25) 
+FIND_PATH(ARIB25_INCLUDE_DIR arib25/arib_std_b25.h PATHS /usr/local/include /usr/include ./)
  
 FIND_LIBRARY(ARIB25_LIBRARIES NAMES libarib_std_b25.a arib25 libarib_std_b25 PATHS /usr/local/lib /usr/lib arib25)
  
