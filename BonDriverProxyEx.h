@@ -6,6 +6,7 @@
 #if __APPLE__
 #define daemon fake_daemon
 #endif
+#include "config.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -14,6 +15,12 @@
 #include <signal.h>
 #include <errno.h>
 #include <time.h>
+#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <netdb.h>
