@@ -47,6 +47,7 @@ ADD_EXECUTABLE(BonDriverProxyEx BonDriverProxyEx.cpp ${DECODER_SOURCES})
 ADD_EXECUTABLE(sample sample.cpp)
 ADD_EXECUTABLE(test EXCLUDE_FROM_ALL util/test.cpp)
 ADD_EXECUTABLE(udpsend EXCLUDE_FROM_ALL util/udpsend.c)
+ADD_EXECUTABLE(splitter EXCLUDE_FROM_ALL util/splitter.cpp)
 ADD_LIBRARY(BonDriver_Proxy SHARED BonDriver_Proxy.cpp)
 
 SET_TARGET_PROPERTIES(BonDriver_Proxy PROPERTIES PREFIX "")
