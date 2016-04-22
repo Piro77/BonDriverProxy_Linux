@@ -76,3 +76,6 @@ IF(CMAKE_SYSTEM_NAME STREQUAL Linux)
   target_link_libraries (BonDriver_DVB ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ICONV_LIBRARIES})
 ENDIF()
 
+ADD_LIBRARY(BonDriver_Splitter SHARED BonDriver_Splitter.cpp)
+SET_TARGET_PROPERTIES(BonDriver_Splitter PROPERTIES PREFIX "")
+target_link_libraries (BonDriver_Splitter ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS} ${ICONV_LIBRARIES})
