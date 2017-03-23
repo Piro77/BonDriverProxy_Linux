@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +8,9 @@
 #include <sys/ioctl.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
 #include <pthread.h>
 #include <queue>
 #include "../typedef.h"
